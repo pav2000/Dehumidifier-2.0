@@ -52,7 +52,13 @@ github с доработками для ардуино https://github.com/rogerc
 ![Плата1](https://github.com/pav2000/Dehumidifier-2.0/blob/master/Picture/20200928_090243.jpg)
 ![Плата2](https://github.com/pav2000/Dehumidifier-2.0/blob/master/Picture/20200928_090301.jpg)
 
-Сборка 
+Сборка.<br>
+Косяки разводки:
+шелкография - на разъеме отладчика SWD перепутаны сигналы DIO CLK
+шелкография - на раъеме 220 и реле перепутаны надписи ssr1 ssr2
+разводка - надо бросить сигнальный провод (почему то не развелся) от датчика тока до maple mini
+Дополнительно было распаяно (частично учтено на схеме)
+RC фильтр на датчик тока, конденсатор на ножку питания, резистор 6.8к между землей и DO usb (без него и без подключения к usb МК переходил в режим загрузчика)
 ![Сборка1](https://github.com/pav2000/Dehumidifier-2.0/blob/master/Picture/20200929_081615.jpg)
 ![Сборка2](https://github.com/pav2000/Dehumidifier-2.0/blob/master/Picture/20200929_081629.jpg)
 
