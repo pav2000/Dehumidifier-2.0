@@ -21,7 +21,7 @@ USB-порт для программирования и коммуникации
 Поддержка режимов низкого напряжения и сна (менее 500 мА)
 На blue pill (самая распространненая плата stm32) 64 кб флеша - по этому я испольщовал maple mini c 128 кб.
 
-Интеграция stm32f103 в среду arduino описана вот здесь:
+Интеграция stm32f103 в среду arduino описана вот здесь:<br>
 https://habr.com/ru/post/395577/ <br>
 https://istarik.ru/blog/arduino/102.html <br>
 http://www.count-zero.ru/2017/stm32duino/ <br>
@@ -46,7 +46,7 @@ github с доработками для ардуино https://github.com/rogerc
 - два светодида на отдельных gpio
 - мост i2c oneWire со схемой защиты для подключения OneWire датчиков
 
-Печатная плата
+Под этот проект была разработана и изготовлена печатная плата. Плата предназначена для установки в корпус g212 
 ![Плата1](https://github.com/pav2000/Dehumidifier-2.0/blob/master/Picture/20200928_090243.jpg)
 ![Плата2](https://github.com/pav2000/Dehumidifier-2.0/blob/master/Picture/20200928_090301.jpg)
 
