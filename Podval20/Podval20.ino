@@ -26,7 +26,7 @@
 
 #define DEBUG          // Выводить отладочную информацию в консоль
 //#define DEMO           // Режим демо 
-#define VERSION    44  // Версия программы
+#define VERSION    45  // Версия программы
 //#define USE_HEAT     // Использовать нагреватель (калорифер) используется SSR2
 
 #include "Podval20.h"  
@@ -348,7 +348,7 @@ static TickType_t sockTick = 0;     // сброс зависших сокето�
       rawVolt=(analogRead(PIN_ACS758)*UREF_VCC*10)/(4096-1); 
       if(rawVolt>sensors.offsetACS758) sum=sum+rawVolt-sensors.offsetACS758;else sum=sum+sensors.offsetACS758-rawVolt; // суммирование + выпремление тока и вычетание смещения (не забываем что у нас ток переменный) надо суммировать обе полуволны и убирать смещение vcc/2
      // _delay(1);
-      delayMicroseconds(100);
+      delayMicroseconds(100); // Нужна строкая переодичность
       }
       sensors.CurrentACS758 = (sum/CURRENT_SAMPLES)*100/miliVoltsPerAmp;  // ток в мА
       curTick = xTaskGetTickCount();
@@ -371,7 +371,7 @@ static TickType_t sockTick = 0;     // сброс зависших сокето�
       digitalWrite(PIN_LED1,HIGH);
      }  
     //  vTaskDelay(TIME_SCAN_SENSOR-CURRENT_SAMPLES/10);    // период корректируется на время измерения тока CURRENT_SAMPLES
-    vTaskDelay(200);
+    vTaskDelay(500);
    }     
 }
 

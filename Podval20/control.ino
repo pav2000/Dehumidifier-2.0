@@ -21,7 +21,7 @@ void measurement()
 { 
   float temperature = 0;
   float humidity = 0;
-  uint32_t temp; 
+  int32_t temp; 
  
   // Проверка работоспособности вентилятора если он включен (если он работает)
   if(FLAG_FAN_CHECK) {if(sensors.CurrentACS758<setting.CurMin) FLAG_TEST_ERR; else FLAG_TEST_OK;}
