@@ -26,7 +26,7 @@
 
 #define DEBUG          // Выводить отладочную информацию в консоль
 //#define DEMO           // Режим демо 
-#define VERSION    45  // Версия программы
+#define VERSION    47  // Версия программы
 //#define USE_HEAT     // Использовать нагреватель (калорифер) используется SSR2
 
 #include "Podval20.h"  
@@ -43,6 +43,8 @@
 #define fTEST             6                     // Флаг ежедневного тестирования и определениея "0" датчика тока
 #define fFULL_WEB         7                     // Флаг показа настроек
 #define fAUTO             8                     // Флаг автокалибровки датчика ACS758 
+#define fTFT_RST          9                     // Флаг ежесуточного сброса дисплея (восстановление изображения) 
+
 static struct type_setting_eeprom               // Структура для сохранения данных в eeprom
  {
      char name[24]="Dehumidifier pav2000";      // Название прибора  
@@ -213,7 +215,7 @@ void setup(){
    else loadEEPROM();                                  // восстановление настроек 
    if(GETBIT(setting.flag,fAUTO))sensors.offsetACS758=sensors.autoACS758;else sensors.offsetACS758=setting.constACS758*10; //Установить смещение в зависимости от настроек
    
-  //  SETBIT1(setting.flag,fDHCP);    
+   // SETBIT1(setting.flag,fDHCP);   // для отладки 
   
    init_w5500();  // Инициализация сети перед дисплеем что бы показать текущий IP
   
@@ -263,7 +265,7 @@ void setup(){
      
    // Вывод на дисплей
    SPI.setModule(2);
-   SPI.setClockDivider(SPI_CLOCK_DIV2);
+   if (GETBIT(setting.flag,fTFT_RST)) SPI.setClockDivider(SPI_CLOCK_DIV4);else SPI.setClockDivider(SPI_CLOCK_DIV2); // установка частоты работы с дисплеем
    tft.begin();
    fullTftUpdate=true;  // Нужна полная прорисовка дисплея при старте ОС
    
@@ -348,7 +350,7 @@ static TickType_t sockTick = 0;     // сброс зависших сокето�
       rawVolt=(analogRead(PIN_ACS758)*UREF_VCC*10)/(4096-1); 
       if(rawVolt>sensors.offsetACS758) sum=sum+rawVolt-sensors.offsetACS758;else sum=sum+sensors.offsetACS758-rawVolt; // суммирование + выпремление тока и вычетание смещения (не забываем что у нас ток переменный) надо суммировать обе полуволны и убирать смещение vcc/2
      // _delay(1);
-      delayMicroseconds(100); // Нужна строкая переодичность
+      delayMicroseconds(100); // Нужна строкая периодичность
       }
       sensors.CurrentACS758 = (sum/CURRENT_SAMPLES)*100/miliVoltsPerAmp;  // ток в мА
       curTick = xTaskGetTickCount();
@@ -403,7 +405,18 @@ static TickType_t curTick = 0;
           Serial.print("RTC update NTP:");Serial.print(tm.year+1970);Serial.print("/");Serial.print(tm.month);Serial.print("/");Serial.print(tm.day);Serial.print(" ");Serial.print(tm.hour);Serial.print(":");Serial.print(tm.minute);Serial.print(":");Serial.println(tm.second);
           #endif  
        }
-       if (GETBIT(setting.flag,fTEST)) testMotorAndACS758(); // Если надо тестировать 
+       if (GETBIT(setting.flag,fTEST)) testMotorAndACS758(); // Если надо тестировать мотор
+       if (GETBIT(setting.flag,fTFT_RST))                    // Если надо сбросить дисплей и работа на пониженной частоте
+       {  
+          reset_ili9341(); // Сброс через ножку
+          SPI.setModule(2);
+          SPI.setClockDivider(SPI_CLOCK_DIV4);
+          tft.begin();
+          fullTftUpdate=true;  // Нужна полная прорисовка дисплея при старте ОС         
+          #ifdef DEBUG
+          Serial.println("Reset TFT");
+          #endif  
+       } 
 
      }
    

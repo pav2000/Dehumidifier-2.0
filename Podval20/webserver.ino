@@ -133,6 +133,10 @@ void webserver()
           // чекбокс показа настроек 
           strcpy(inBufGet,(char*)"&nbsp;&nbsp;Показать настройки");strcat(inBufGet,"&nbsp;<input name=\"");strcat(inBufGet,(char*)"QUICK");strcat(inBufGet,"\" type=\"checkbox\"");
           if (GETBIT(setting.flag,fFULL_WEB)) strcat(inBufGet,"checked");
+
+    //      strcat(inBufGet,(char*)"&nbsp;&nbsp;Сброс контроллера");strcat(inBufGet,"&nbsp;<input name=\"");strcat(inBufGet,(char*)"RST");strcat(inBufGet,"\" type=\"checkbox\"");
+    //      if (GETBIT(setting.flag,fFULL_WEB)) strcat(inBufGet,"checked");
+          
           strcat(inBufGet,"/>");
           client.println(inBufGet);    
           client.println("<input name=\"send\" type=\"submit\"value=\">>\"/></form>"); // Надпись на кнопке ">>" не менять, она используется для определения что вводится
@@ -154,7 +158,9 @@ void webserver()
               oneInputCheckbox(client, (char*)"Авто обновление web страницы раз в 60 сек.",(char*)"UPDATE", GETBIT(setting.flag,fUPDATE)); 
               oneInputCheckbox(client, (char*)"Повернуть изображение на дисплее на 180 градусов",(char*)"TFT_180", GETBIT(setting.flag,fTFT_180));           
               oneInputCheckbox(client, (char*)"Выключить дисплей",(char*)"TFT_OFF", GETBIT(setting.flag,fTFT_OFF)); 
+              oneInputCheckbox(client, (char*)"Ежесуточный сброс дисплея и работа на частоте 18 Мгц",(char*)"TFT_RST", GETBIT(setting.flag,fTFT_RST)); 
               oneInputCheckbox(client, (char*)"Включить биппер",(char*)"BEEP", GETBIT(setting.flag,fBEEP)); 
+              oneInputCheckbox(client, (char*)"Сброс осушителя",(char*)"RST", false);  // Сброс контроллера
               client.println("<tr><td><i>&nbsp;&nbsp;&nbsp;&nbsp;3. Датчик тока ACS758</i></td><td></td></tr>");
               oneInputCheckbox(client, (char*)"Ежедневное тестирование вентилятора",(char*)"TEST", GETBIT(setting.flag,fTEST));
               oneInputCheckbox(client, (char*)"Автоматическое определение смещения \"0\" ACS758",(char*)"AUTO", GETBIT(setting.flag,fAUTO));
@@ -200,7 +206,7 @@ void parserGET(char *buf)
 { 
 uint8_t code;  
 char *str, *strGet;  
-boolean update=false, tft_off=false, tft_180=false, ChangeTFT=false, upTFT=false, dhcp=false, ntp=false, _update=false, _beep=false, test=false, keyForm=false, quick=false, _auto=false;
+boolean update=false, tft_off=false, tft_180=false, ChangeTFT=false, upTFT=false, dhcp=false, ntp=false, _update=false, _beep=false, test=false, keyForm=false, quick=false, _auto=false, tft_rst=false, rst=false ;
 IPAddress temp;
 str = strstr(buf,"HTTP");  str[0]=0;     //Обрезать хвост
 
@@ -213,111 +219,123 @@ while ((str = strtok_r(buf, "&", &buf)) != NULL) // разбор отдельн�
     strGet=strchr(str,'=');
     if (strGet!=NULL){parseIPAddress(strGet+1,'.',temp); if(setting.ip!=temp){setting.ip=temp; update=true;}}
    }
-  if (strstr(str,"DNS")!=NULL) // Команда DNS найдена
+  else if (strstr(str,"DNS")!=NULL) // Команда DNS найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){parseIPAddress(strGet+1,'.',temp); if(setting.dns!=temp){setting.dns=temp; update=true;}}
    }   
-  if (strstr(str,"gateway")!=NULL) // Команда gateway найдена
+  else  if (strstr(str,"gateway")!=NULL) // Команда gateway найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){parseIPAddress(strGet+1,'.',temp); if(setting.gateway!=temp){setting.gateway=temp; update=true;}}
    }
-  if (strstr(str,"mask")!=NULL) // Команда mask найдена
+  else  if (strstr(str,"mask")!=NULL) // Команда mask найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){parseIPAddress(strGet+1,'.',temp);if(setting.mask!=temp){setting.mask=temp; update=true;}}
    }
- if (strstr(str,"mode")!=NULL) // Команда mode найдена
+ else  if (strstr(str,"mode")!=NULL) // Команда mode найдена
    {
     strGet=strchr(str,'='); // содержит = и код символа от 0 до 7
     code=((uint8_t)strGet[1])-0x30;// преобразовать код символа в число (грязная техника)  
     if (strGet!=NULL){ if((setting.mode!=(TYPE_MODE)code)&&(code>=0)&&(code<=7)){setting.mode=(TYPE_MODE)code; update=true;ChangeTFT=true;}}   // Обновление на дисплее режима работы
  //   Serial.println(setting.mode);
    } 
-if (strstr(str,"QUICK")!=NULL) // Команда QUICK найдена
+ else  if (strstr(str,"QUICK")!=NULL) // Команда QUICK найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) quick=true;
    }       
-if (strstr(str,"TFT_OFF")!=NULL) // Команда TFT_OFF найдена
+ else if (strstr(str,"TFT_OFF")!=NULL) // Команда TFT_OFF найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) tft_off=true;
    }    
-if (strstr(str,"TFT_180")!=NULL) // Команда TFT_180 найдена
+ else  if (strstr(str,"TFT_180")!=NULL) // Команда TFT_180 найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) tft_180=true;
    }    
-if (strstr(str,"DHCP")!=NULL) // Команда DHCP найдена
+ else if (strstr(str,"DHCP")!=NULL) // Команда DHCP найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) dhcp=true;
    }             
-if (strstr(str,"NTP")!=NULL) // Команда NTP найдена
+ else if (strstr(str,"NTP")!=NULL) // Команда NTP найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) ntp=true;
    }             
-if (strstr(str,"UPDATE")!=NULL) // Команда UPDATE найдена
+ else if (strstr(str,"UPDATE")!=NULL) // Команда UPDATE найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) _update=true;
    }             
-if (strstr(str,"BEEP")!=NULL) // Команда BEEP найдена
+ else if (strstr(str,"BEEP")!=NULL) // Команда BEEP найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) _beep=true;
    } 
-if (strstr(str,"TEST")!=NULL) // Команда TEST найдена
+ else if (strstr(str,"TFT_RST")!=NULL) // Команда TFT_RST найдена
+   {
+    strGet=strchr(str,'=');
+    if (strGet!=NULL) 
+        if(strcmp(strGet+1,"on")==0) tft_rst=true;
+   }  
+ else if (strstr(str,"RST")!=NULL) // Команда RST найдена (сброс контроллера) должна быть после команды TFT_RST
+   {
+    strGet=strchr(str,'=');
+    if (strGet!=NULL) 
+        if(strcmp(strGet+1,"on")==0) rst=true;
+   }       
+ else if (strstr(str,"TEST")!=NULL) // Команда TEST найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) test=true;
    }    
-if (strstr(str,"AUTO")!=NULL) // Команда TEST найдена
+ else if (strstr(str,"AUTO")!=NULL) // Команда TEST найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL) 
         if(strcmp(strGet+1,"on")==0) _auto=true;
    } 
    
- if (strstr(str,"CONST")!=NULL) // Команда CONST найдена
+ else  if (strstr(str,"CONST")!=NULL) // Команда CONST найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){ if(setting.constACS758!=atoi(strGet+1)) {setting.constACS758=atoi(strGet+1);update=true;}}
    }
      
- if (strstr(str,"CurMin")!=NULL) // Команда CurMin найдена
+ else if (strstr(str,"CurMin")!=NULL) // Команда CurMin найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){ if(setting.CurMin!=atoi(strGet+1)) {setting.CurMin=atoi(strGet+1);update=true;}}
    }
    
- if (strstr(str,"eTIN")!=NULL) // Команда eTIN найдена
+ else if (strstr(str,"eTIN")!=NULL) // Команда eTIN найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){ if(setting.eTIN!=atoi(strGet+1)) {setting.eTIN=atoi(strGet+1);update=true;}}
    }
-if (strstr(str,"eTOUT")!=NULL) // Команда eTOUT найдена
+ else if (strstr(str,"eTOUT")!=NULL) // Команда eTOUT найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){ if(setting.eTOUT!=atoi(strGet+1)) {setting.eTOUT=atoi(strGet+1);update=true;}}
    }
-if (strstr(str,"eHIN")!=NULL) // Команда eHIN найдена
+ else if (strstr(str,"eHIN")!=NULL) // Команда eHIN найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){ if(setting.eHIN!=atoi(strGet+1)) {setting.eHIN=atoi(strGet+1);update=true;}}
    }
-if (strstr(str,"eHOUT")!=NULL) // Команда eHOUT найдена
+ else if (strstr(str,"eHOUT")!=NULL) // Команда eHOUT найдена
    {
     strGet=strchr(str,'=');
     if (strGet!=NULL){ if(setting.eHOUT!=atoi(strGet+1)) {setting.eHOUT=atoi(strGet+1);update=true;}}
@@ -338,6 +356,9 @@ else if ((tft_off)&&(!GETBIT(setting.flag,fTFT_OFF ))){SETBIT1(setting.flag,fTFT
 
 if ((!tft_180)&&(GETBIT(setting.flag,fTFT_180))){SETBIT0(setting.flag,fTFT_180);update=true;ChangeTFT=true;}
 else if ((tft_180)&&(!GETBIT(setting.flag,fTFT_180))){SETBIT1(setting.flag,fTFT_180);update=true;ChangeTFT=true;}
+
+if ((!tft_rst)&&(GETBIT(setting.flag,fTFT_RST))){SETBIT0(setting.flag,fTFT_RST);update=true;}
+else if ((tft_rst)&&(!GETBIT(setting.flag,fTFT_RST))){SETBIT1(setting.flag,fTFT_RST);update=true;}
 
 if ((!dhcp)&&(GETBIT(setting.flag,fDHCP))){SETBIT0(setting.flag,fDHCP);update=true;}
 else if ((dhcp)&&(!GETBIT(setting.flag,fDHCP))){SETBIT1(setting.flag,fDHCP);update=true;}
@@ -362,7 +383,6 @@ else // Верхняя форма  кнопка ">>"
 {
 if ((!quick)&&(GETBIT(setting.flag,fFULL_WEB))){SETBIT0(setting.flag,fFULL_WEB);update=true;quick=true;}
 else if ((quick)&&(!GETBIT(setting.flag,fFULL_WEB))){SETBIT1(setting.flag,fFULL_WEB);update=true;quick=true;}
-  
 }
   
 if (update) {
@@ -371,6 +391,7 @@ if (update) {
    if(GETBIT(setting.flag,fAUTO))sensors.offsetACS758=sensors.autoACS758;else sensors.offsetACS758=setting.constACS758*10; //Установить смещение в зависимости от настроек
    saveEEPROM();
    }
+if (rst) nvic_sys_reset(); // Сброс контроллера   
 }
 
 // Вывести одно поле ввода параметра Text - функция универсальна ----------------------------------------------------------------

@@ -25,7 +25,7 @@ __attribute__((always_inline)) inline boolean switchTFT()
         } 
   vTaskSuspendAll();       
   SPI.setModule(2);
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
+  if (GETBIT(setting.flag,fTFT_RST)) SPI.setClockDivider(SPI_CLOCK_DIV4);else SPI.setClockDivider(SPI_CLOCK_DIV2); // установка частоты работы с дисплеем
   return true;
 }
 
@@ -43,7 +43,8 @@ void reset_ili9341(void)
   pinMode(pinTFT_RST, OUTPUT);                    // Сброс дисплея сигнал активным является LOW
   digitalWrite(pinTFT_RST, LOW);  
   _delay(50);
-  digitalWrite(pinTFT_RST, HIGH);  
+  digitalWrite(pinTFT_RST, HIGH);
+  _delay(50);  
 }
 void print_static()  // Печать статической картинки 
 {

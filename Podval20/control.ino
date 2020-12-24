@@ -211,20 +211,20 @@ boolean testMotorAndACS758(void)
 {
  boolean state=FLAG_FAN_CHECK; // запомнить состяние мотора до тестирования
  if(GETBIT(setting.flag,fAUTO)){ // Если требуется автокалиброва датчика тока
- #ifdef DEBUG
- Serial.println("Аutocalibration ACS758 . . .");
- #endif
- if(state){FAN_OFF; _delay(4000);}      // если надо то выключить мотор для калибровки ACS758
- vTaskSuspendAll(); 
- sensors.autoACS758=CalibrACS758();   // Автокалибровка датчика тока,
- xTaskResumeAll();
- if(GETBIT(setting.flag,fAUTO))sensors.offsetACS758=sensors.autoACS758;else sensors.offsetACS758=setting.constACS758*10; //Установить смещение в зависимости от настроек
- }
+   #ifdef DEBUG
+   Serial.println("Аutocalibration ACS758 . . .");
+   #endif
+   if(state){FAN_OFF; _delay(5000);}      // если надо то выключить мотор для калибровки ACS758
+   vTaskSuspendAll(); 
+   sensors.autoACS758=CalibrACS758();   // Автокалибровка датчика тока,
+   xTaskResumeAll();
+   sensors.offsetACS758=sensors.autoACS758; //Установить смещение в зависимости от настроек
+   }
  #ifdef DEBUG
  Serial.print("Offset ACS758 (mV): "); Serial.println(sensors.offsetACS758/10);
  Serial.println("Test fan . . .");
  #endif
- if(!state){ FAN_ON; _delay(5000);} // Если мотор не включен, включить мотор и пауза для разгона
+ if(!state){ FAN_ON; _delay(30000);} // Если мотор не включен, включить мотор и пауза для разгона и чтения датчика тока с усреднением
  if(sensors.CurrentACS758<setting.CurMin)FLAG_TEST_ERR;else FLAG_TEST_OK;
  #ifdef DEBUG
  if(FLAG_TEST_CHECK)  Serial.println("Fan OK"); else Serial.println("Fan not work!!"); 
