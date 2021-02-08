@@ -17,15 +17,17 @@ static char OutputBuf[maxString + 1] = "";
 // Переключиться на вывод на дисплей true  если удалось
 __attribute__((always_inline)) inline boolean switchTFT()  
 {
-   if(xSemaphoreTake(xTFTSemaphore, 5000) == pdFALSE) {  // захватываем семафор
+  if(xSemaphoreTake(xTFTSemaphore, 5000) == pdFALSE) {  // захватываем семафор
             #ifdef DEBUG
             Serial.println("Error take semaphore");
             #endif 
            return false;
         } 
-  vTaskSuspendAll();       
+  vTaskSuspendAll();   
+   _delay(20);    
   SPI.setModule(2);
-  if (GETBIT(setting.flag,fTFT_RST)) SPI.setClockDivider(SPI_CLOCK_DIV4);else SPI.setClockDivider(SPI_CLOCK_DIV2); // установка частоты работы с дисплеем
+  if (GETBIT(setting.flag,fTFT_RST))SPI.setClockDivider(SPI_CLOCK_DIV4);else SPI.setClockDivider(SPI_CLOCK_DIV2); // установка частоты работы с дисплеем
+  //SPI.setClockDivider(SPI_CLOCK_DIV2); // установка частоты работы с дисплеем
   return true;
 }
 
@@ -42,9 +44,9 @@ void reset_ili9341(void)
 {
   pinMode(pinTFT_RST, OUTPUT);                    // Сброс дисплея сигнал активным является LOW
   digitalWrite(pinTFT_RST, LOW);  
-  _delay(50);
+  _delay(80);
   digitalWrite(pinTFT_RST, HIGH);
-  _delay(50);  
+  _delay(20);  
 }
 void print_static()  // Печать статической картинки 
 {
@@ -206,7 +208,8 @@ static uint16_t cpu_old=0;
 void print_LoadCPU()
 {
  uint16_t cpu; 
- cpu = 320 - 320*lastPeriodIdleValue/(1 << periodLen);
+ cpu = 320 - (320*lastPeriodIdleValue)/(1 << periodLen);
+ if (cpu>320-1) cpu=320-1; 
  if (cpu==cpu_old) return; // рисовать нечего выходим
  switchTFT();
  tft.fillRect(0, 239-hLoad , 320, hLoad, ILI9341_BLACK); // Стирание

@@ -158,9 +158,9 @@ void webserver()
               oneInputCheckbox(client, (char*)"Авто обновление web страницы раз в 60 сек.",(char*)"UPDATE", GETBIT(setting.flag,fUPDATE)); 
               oneInputCheckbox(client, (char*)"Повернуть изображение на дисплее на 180 градусов",(char*)"TFT_180", GETBIT(setting.flag,fTFT_180));           
               oneInputCheckbox(client, (char*)"Выключить дисплей",(char*)"TFT_OFF", GETBIT(setting.flag,fTFT_OFF)); 
-              oneInputCheckbox(client, (char*)"Ежесуточный сброс дисплея и работа на частоте 18 Мгц",(char*)"TFT_RST", GETBIT(setting.flag,fTFT_RST)); 
+              oneInputCheckbox(client, (char*)"Каждый час инициализировать дисплей + SPI 18 Мгц",(char*)"TFT_RST", GETBIT(setting.flag,fTFT_RST)); 
               oneInputCheckbox(client, (char*)"Включить биппер",(char*)"BEEP", GETBIT(setting.flag,fBEEP)); 
-              oneInputCheckbox(client, (char*)"Сброс осушителя",(char*)"RST", false);  // Сброс контроллера
+              oneInputCheckbox(client, (char*)"<FONT color=red>Програмный сброс осушителя</FONT>",(char*)"RST", false);  // Сброс контроллера
               client.println("<tr><td><i>&nbsp;&nbsp;&nbsp;&nbsp;3. Датчик тока ACS758</i></td><td></td></tr>");
               oneInputCheckbox(client, (char*)"Ежедневное тестирование вентилятора",(char*)"TEST", GETBIT(setting.flag,fTEST));
               oneInputCheckbox(client, (char*)"Автоматическое определение смещения \"0\" ACS758",(char*)"AUTO", GETBIT(setting.flag,fAUTO));

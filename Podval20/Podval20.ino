@@ -26,7 +26,7 @@
 
 #define DEBUG          // Выводить отладочную информацию в консоль
 //#define DEMO           // Режим демо 
-#define VERSION    47  // Версия программы
+#define VERSION    52  // Версия программы
 //#define USE_HEAT     // Использовать нагреватель (калорифер) используется SSR2
 
 #include "Podval20.h"  
@@ -173,12 +173,12 @@ void setup(){
    digitalWrite(PIN_BEEP, LOW); 
    pinMode(PIN_LED1, OUTPUT);          //  Настройка ноги для LED1
    pinMode(PIN_LED2, OUTPUT);          //  Настройка ноги для LED2
-   digitalWrite(PIN_LED1, LOW);   
-   digitalWrite(PIN_LED2, LOW);   
+//   digitalWrite(PIN_LED1, LOW);   
+//   digitalWrite(PIN_LED2, LOW);   
 //   _delay(200);
-   sensors.autoACS758=CalibrACS758(); // Автокалибровка датчика тока, используется как пауза для включения светодиодов (делаем всегда)
-   digitalWrite(PIN_LED1, HIGH);   
-   digitalWrite(PIN_LED2, HIGH);   
+//   sensors.autoACS758=CalibrACS758(); // Автокалибровка датчика тока, используется как пауза для включения светодиодов (делаем всегда)
+//   digitalWrite(PIN_LED1, HIGH);   
+//   digitalWrite(PIN_LED2, HIGH);   
   
    // Подготовка переменных и графиков
    reset_sum();
@@ -213,7 +213,7 @@ void setup(){
    // Попытка прочитать сохраненные настройки
    if(initEEPROM()!=0) {formatEEPROM(); saveEEPROM();} // Запись настроек по умолчанию
    else loadEEPROM();                                  // восстановление настроек 
-   if(GETBIT(setting.flag,fAUTO))sensors.offsetACS758=sensors.autoACS758;else sensors.offsetACS758=setting.constACS758*10; //Установить смещение в зависимости от настроек
+  // if(GETBIT(setting.flag,fAUTO))sensors.offsetACS758=sensors.autoACS758;else sensors.offsetACS758=setting.constACS758*10; //Установить смещение в зависимости от настроек
    
    // SETBIT1(setting.flag,fDHCP);   // для отладки 
   
@@ -265,7 +265,7 @@ void setup(){
      
    // Вывод на дисплей
    SPI.setModule(2);
-   if (GETBIT(setting.flag,fTFT_RST)) SPI.setClockDivider(SPI_CLOCK_DIV4);else SPI.setClockDivider(SPI_CLOCK_DIV2); // установка частоты работы с дисплеем
+   if (GETBIT(setting.flag,fTFT_RST))SPI.setClockDivider(SPI_CLOCK_DIV4);else SPI.setClockDivider(SPI_CLOCK_DIV2); // установка частоты работы с дисплеем
    tft.begin();
    fullTftUpdate=true;  // Нужна полная прорисовка дисплея при старте ОС
    
@@ -297,12 +297,12 @@ void loop()
 {
 }
 // Расчет загрузки контроллера 
-static const uint8 periodLen = 9; // 2^periodLen ticks - 512 x 1ms ticks 
+#define  periodLen  9  // 2^periodLen ticks - 512 x 1ms ticks 
 volatile TickType_t curIdleTicks = 0;
 volatile TickType_t lastCountedTick = 0;
 volatile TickType_t lastCountedPeriod = 0;
 static TickType_t lastPeriodIdleValue = 0;  // Простой контроллера за последний период
-volatile TickType_t minIdleValue = 1 << periodLen; // минимальный простой контроллера с момента пуска
+static TickType_t minIdleValue = 1 << periodLen; // минимальный простой контроллера с момента пуска
 extern "C" void vApplicationIdleHook( void ) //В конфиге freertos  должно быть #define configUSE_IDLE_HOOK   1 в файл FreeRTOSConfig.h
 {
     // Process idle tick counter
@@ -333,9 +333,14 @@ int32_t sum,rawVolt;
 static TickType_t DHT22Tick = 0;     // счетчик тиков для суточных отсчетов (обновление времени и тестирование мотора)
 static TickType_t curTick = 0;
 static TickType_t sockTick = 0;     // сброс зависших сокетов
+digitalWrite(PIN_LED1, LOW);   
+digitalWrite(PIN_LED2, LOW);  
 // При первом пуске автокалибровка датчика тока
-//sensors.offsetACS758=CalibrACS758(); // Автокалибровка датчика тока, используется как пауза для включения светодиодов
- 
+sensors.autoACS758=CalibrACS758(); // Автокалибровка датчика тока, используется как пауза для включения светодиодов
+//Установить смещение в зависимости от настроек 
+if(GETBIT(setting.flag,fAUTO)) sensors.offsetACS758=sensors.autoACS758; else sensors.offsetACS758=setting.constACS758*10; 
+digitalWrite(PIN_LED1, HIGH);   
+digitalWrite(PIN_LED2, HIGH);
   for (;;) {  
       iwdg_feed();  // Вачдог сброс
       SPI.setModule(1);
@@ -373,7 +378,7 @@ static TickType_t sockTick = 0;     // сброс зависших сокето�
       digitalWrite(PIN_LED1,HIGH);
      }  
     //  vTaskDelay(TIME_SCAN_SENSOR-CURRENT_SAMPLES/10);    // период корректируется на время измерения тока CURRENT_SAMPLES
-    vTaskDelay(500);
+    vTaskDelay(500);  // период измерения тока
    }     
 }
 
@@ -382,11 +387,13 @@ static void vUpdateTFT(void *pvParameters) {
 static TickType_t UpdateDataTick = 0;    // счетчик тиков обновления данных
 static TickType_t UpdateChartTick = 0;   // счетчик тиков обновления графика
 static TickType_t UpdateDayTick = 0;     // счетчик тиков для суточных отсчетов (обновление времени и тестирование мотора)
+static TickType_t UpdateHourTick = 0;    // счетчик тиков для часовых отсчетов (сброс дисплея)
+
 static TickType_t curTick = 0;
   for (;;) { 
    iwdg_feed();      // Вачдог сброс 
    curTick = xTaskGetTickCount();
-   if(curTick<UpdateDataTick) {UpdateDataTick=0;UpdateChartTick=0;UpdateDayTick=0;}// если счетик тиков xTaskGetTickCount() переполнился  
+   if(curTick<UpdateDataTick) {UpdateDataTick=0;UpdateChartTick=0;UpdateDayTick=0;UpdateHourTick = 0;}// если счетик тиков xTaskGetTickCount() переполнился  
    if((GETBIT(setting.flag,fTFT_OFF))&&(fullTftUpdate)) // выключение дисплея 
    {
      fullTftUpdate=false;                    // Сбросить признак полного обновления дисплей
@@ -394,7 +401,8 @@ static TickType_t curTick = 0;
      switchNET();
    }
    if (curTick-UpdateDayTick>24*TIME_HOUR){ // Время пришло раз в сутки
-       UpdateDayTick=curTick;
+        UpdateDayTick=curTick;
+       
        if(!checkNetLink()) {reset_w5500();_delay(100); init_w5500();}  // Сбросить контроллер если сети (нет линка) может он завис (для увеличения надежности)
        if (GETBIT(setting.flag,fNTP))// Если надо обновлять время по NTP
        {
@@ -406,33 +414,38 @@ static TickType_t curTick = 0;
           #endif  
        }
        if (GETBIT(setting.flag,fTEST)) testMotorAndACS758(); // Если надо тестировать мотор
-       if (GETBIT(setting.flag,fTFT_RST))                    // Если надо сбросить дисплей и работа на пониженной частоте
-       {  
-          reset_ili9341(); // Сброс через ножку
-          SPI.setModule(2);
-          SPI.setClockDivider(SPI_CLOCK_DIV4);
-          tft.begin();
-          fullTftUpdate=true;  // Нужна полная прорисовка дисплея при старте ОС         
-          #ifdef DEBUG
-          Serial.println("Reset TFT");
-          #endif  
-       } 
-
      }
-   
+
+  
    if (!GETBIT(setting.flag,fTFT_OFF)) // Дисплей не выключен
      {
+       if (curTick-UpdateHourTick>60*60*1000){ // Время час
+         UpdateHourTick=curTick;
+         if (GETBIT(setting.flag,fTFT_RST))                    // Если надо сбросить дисплей 
+           {  
+              reset_ili9341(); // Сброс через ножку
+              switchTFT(); 
+              tft.begin();
+              switchNET();
+              fullTftUpdate=true;  // Нужна полная прорисовка дисплея при старте ОС         
+              #ifdef DEBUG
+              Serial.println("Reset TFT");
+              #endif  
+   //           beep(50);
+              } 
+           }
          if (fullTftUpdate){ // если надо полностью обновить дисплей
               fullTftUpdate=false;                  // Сбросить признак полного обновления дисплей
               print_static();                       // распечатать таблицу
               print_setting();                      // показать настройки   и обновить переменные границ
+              print_error_AHT();                    // Вывод ошибки чтения датчика при каждом чтении контроль за качеством связи с датчиком
               print_data();                         // вывод усредненных значений 
               print_status(checkNetLink());         // панель состояния
-              printChart();
-              last_error=100;                       // Показать ошибку                    
+         //     printChart();
+              last_error=100;                       // Показать ошибку   
+              UpdateDataTick=curTick;               // Сброс счетчика частичного обновления
              }
-              print_LoadCPU();                      // Показ графика загрузки
-              print_time();
+          else  { // частичное обновление
           if (curTick-UpdateDataTick>TIME_SCAN_SENSOR){ //  Вывод усредненных значений
               UpdateDataTick=curTick;
               print_error_AHT();                    // Вывод ошибки чтения датчика при каждом чтении контроль за качеством связи с датчиком
@@ -440,7 +453,8 @@ static TickType_t curTick = 0;
               print_status(checkNetLink());          // панель состояния
               if (FLAG_FAN_CHECK) ChartMotor=true;   // Признак того что надо показывать включение мотора на графике
              }
-        if (curTick-UpdateChartTick>TIME_PRINT_CHART){ //  Вывод Графиков  
+          } // else  { // частичное обновление
+          if (curTick-UpdateChartTick>TIME_PRINT_CHART){ //  Вывод Графиков  если время пришло
                UpdateChartTick=curTick;   
                printChart(); // Сдвиг графика и вывод новой точки
                #ifdef  DEBUG  
@@ -448,6 +462,9 @@ static TickType_t curTick = 0;
                #endif  
                if (GETBIT(setting.flag,fBEEP)) beep(30);  // Звук добавления точки
             } 
+        
+              print_LoadCPU();                      // Показ графика загрузки
+              print_time();                         // Показ часов
       } // if (!GETBIT(setting.flag,fTFT_OFF)) 
       vTaskDelay(TIME_UPDATE_TFT);
   }   // for  
